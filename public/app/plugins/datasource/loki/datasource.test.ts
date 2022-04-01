@@ -13,8 +13,7 @@ import {
   toUtc,
 } from '@grafana/data';
 import { BackendSrvRequest, FetchResponse } from '@grafana/runtime';
-
-import LokiDatasource, { RangeQueryOptions } from './datasource';
+import { isMetricsQuery, LokiDatasource, RangeQueryOptions } from './datasource';
 import { LokiQuery, LokiResponse, LokiResultType } from './types';
 import { getQueryOptions } from 'test/helpers/getQueryOptions';
 import { TemplateSrv } from 'app/features/templating/template_srv';
@@ -36,13 +35,13 @@ const rawRange = {
   to: toUtc('2018-04-25 11:00'),
 };
 
-const timeSrvStub = {
+const timeSrvStub = ({
   timeRange: () => ({
     from: rawRange.from,
     to: rawRange.to,
     raw: rawRange,
   }),
-} as unknown as TimeSrv;
+} as unknown) as TimeSrv;
 
 const templateSrvStub = {
   getAdhocFilters: jest.fn(() => [] as any[]),
@@ -63,13 +62,13 @@ const testLogsResponse: FetchResponse<LokiResponse> = {
     status: 'success',
   },
   ok: true,
-  headers: {} as unknown as Headers,
+  headers: ({} as unknown) as Headers,
   redirected: false,
   status: 200,
   statusText: 'Success',
   type: 'default',
   url: '',
-  config: {} as unknown as BackendSrvRequest,
+  config: ({} as unknown) as BackendSrvRequest,
 };
 
 const testMetricsResponse: FetchResponse<LokiResponse> = {
@@ -86,13 +85,13 @@ const testMetricsResponse: FetchResponse<LokiResponse> = {
     status: 'success',
   },
   ok: true,
-  headers: {} as unknown as Headers,
+  headers: ({} as unknown) as Headers,
   redirected: false,
   status: 200,
   statusText: 'OK',
   type: 'basic',
   url: '',
-  config: {} as unknown as BackendSrvRequest,
+  config: ({} as unknown) as BackendSrvRequest,
 };
 
 interface AdHocFilter {
@@ -171,9 +170,9 @@ describe('LokiDatasource', () => {
       beforeEach(() => {
         const raw = { from: 'now', to: 'now-1h' };
         const range = { from: dateTime(), to: dateTime(), raw: raw };
-        options = {
+        options = ({
           range,
-        } as unknown as RangeQueryOptions;
+        } as unknown) as RangeQueryOptions;
       });
 
       it('should add volume hint param for log volume queries', () => {
@@ -217,10 +216,10 @@ describe('LokiDatasource', () => {
         },
       };
 
-      const templateSrvMock = {
+      const templateSrvMock = ({
         getAdhocFilters: (): any[] => [],
         replace: (a: string) => a,
-      } as unknown as TemplateSrv;
+      } as unknown) as TemplateSrv;
 
       const ds = new LokiDatasource(settings, templateSrvMock, timeSrvStub as any);
 
@@ -618,7 +617,7 @@ describe('LokiDatasource', () => {
     };
 
     it('should transform the loki data to annotation response', async () => {
-      const response: FetchResponse = {
+      const response: FetchResponse = ({
         data: {
           data: {
             resultType: LokiResultType.Stream,
@@ -642,7 +641,7 @@ describe('LokiDatasource', () => {
           },
           status: 'success',
         },
-      } as unknown as FetchResponse;
+      } as unknown) as FetchResponse;
       const { promise } = getTestContext(response, { stepInterval: '15s' });
 
       const res = await promise;
@@ -655,7 +654,7 @@ describe('LokiDatasource', () => {
       expect(res[1].tags).toEqual(['value2']);
     });
     describe('Formatting', () => {
-      const response: FetchResponse = {
+      const response: FetchResponse = ({
         data: {
           data: {
             resultType: LokiResultType.Stream,
@@ -672,7 +671,7 @@ describe('LokiDatasource', () => {
           },
           status: 'success',
         },
-      } as unknown as FetchResponse;
+      } as unknown) as FetchResponse;
       describe('When tagKeys is set', () => {
         it('should only include selected labels', async () => {
           const { promise } = getTestContext(response, { tagKeys: 'label2,label3', stepInterval: '15s' });
@@ -857,10 +856,10 @@ describe('LokiDatasource', () => {
             value: 'grafana',
           },
         ];
-        const templateSrvMock = {
+        const templateSrvMock = ({
           getAdhocFilters: (): AdHocFilter[] => adHocFilters,
           replace: (a: string) => a,
-        } as unknown as TemplateSrv;
+        } as unknown) as TemplateSrv;
         ds = createLokiDSForTests(templateSrvMock);
       });
       describe('and query has no parser', () => {
@@ -892,10 +891,10 @@ describe('LokiDatasource', () => {
             value: 'grafana',
           },
         ];
-        const templateSrvMock = {
+        const templateSrvMock = ({
           getAdhocFilters: (): AdHocFilter[] => adHocFilters,
           replace: (a: string) => a,
-        } as unknown as TemplateSrv;
+        } as unknown) as TemplateSrv;
         ds = createLokiDSForTests(templateSrvMock);
       });
       describe('and query has no parser', () => {
@@ -1030,6 +1029,23 @@ describe('LokiDatasource', () => {
   });
 });
 
+describe('isMetricsQuery', () => {
+  it('should return true for metrics query', () => {
+    const query = 'rate({label=value}[1m])';
+    expect(isMetricsQuery(query)).toBeTruthy();
+  });
+
+  it('should return false for logs query', () => {
+    const query = '{label=value}';
+    expect(isMetricsQuery(query)).toBeFalsy();
+  });
+
+  it('should not blow up on empty query', () => {
+    const query = '';
+    expect(isMetricsQuery(query)).toBeFalsy();
+  });
+});
+
 function assertAdHocFilters(query: string, expectedResults: string, ds: LokiDatasource) {
   const lokiQuery: LokiQuery = { refId: 'A', expr: query };
   const result = ds.addAdHocFilters(lokiQuery.expr);
@@ -1038,10 +1054,10 @@ function assertAdHocFilters(query: string, expectedResults: string, ds: LokiData
 }
 
 function createLokiDSForTests(
-  templateSrvMock = {
+  templateSrvMock = ({
     getAdhocFilters: (): any[] => [],
     replace: (a: string) => a,
-  } as unknown as TemplateSrv
+  } as unknown) as TemplateSrv
 ): LokiDatasource {
   const instanceSettings: any = {
     url: 'myloggingurl',

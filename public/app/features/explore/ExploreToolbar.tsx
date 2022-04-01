@@ -115,6 +115,8 @@ class UnConnectedExploreToolbar extends PureComponent<Props> {
               </ToolbarButton>
             )}
 
+            <AddToDashboard exploreId={exploreId} />
+
             {!isLive && (
               <ExploreTimeControls
                 exploreId={exploreId}
@@ -130,8 +132,6 @@ class UnConnectedExploreToolbar extends PureComponent<Props> {
                 onChangeFiscalYearStartMonth={onChangeFiscalYearStartMonth}
               />
             )}
-
-            <AddToDashboard exploreId={exploreId} />
 
             <RunButton
               refreshInterval={refreshInterval}
@@ -170,8 +170,16 @@ class UnConnectedExploreToolbar extends PureComponent<Props> {
 const mapStateToProps = (state: StoreState, { exploreId }: OwnProps) => {
   const { syncedTimes } = state.explore;
   const exploreItem = state.explore[exploreId]!;
-  const { datasourceInstance, datasourceMissing, range, refreshInterval, loading, isLive, isPaused, containerWidth } =
-    exploreItem;
+  const {
+    datasourceInstance,
+    datasourceMissing,
+    range,
+    refreshInterval,
+    loading,
+    isLive,
+    isPaused,
+    containerWidth,
+  } = exploreItem;
 
   const hasLiveOption = !!datasourceInstance?.meta?.streaming;
 

@@ -328,7 +328,9 @@ export function transformFromOTLP(
 /**
  * Transforms trace dataframes to the OpenTelemetry format
  */
-export function transformToOTLP(data: MutableDataFrame): {
+export function transformToOTLP(
+  data: MutableDataFrame
+): {
   batches: collectorTypes.opentelemetryProto.trace.v1.ResourceSpans[];
 } {
   let result: { batches: collectorTypes.opentelemetryProto.trace.v1.ResourceSpans[] } = {
@@ -390,6 +392,7 @@ export function transformToOTLP(data: MutableDataFrame): {
       droppedLinksCount: 0,
       status: getOTLPStatus(span.tags),
       events: getOTLPEvents(span.logs),
+      links: getOTLPReferences(span.references),
     });
   }
 
@@ -500,6 +503,34 @@ function getOTLPEvents(logs: TraceLog[]): collectorTypes.opentelemetryProto.trac
     events.push(event);
   }
   return events;
+}
+
+function getOTLPReferences(
+  references: TraceSpanReference[]
+): collectorTypes.opentelemetryProto.trace.v1.Span.Link[] | undefined {
+  if (!references || !references.length) {
+    return undefined;
+  }
+
+  let links: collectorTypes.opentelemetryProto.trace.v1.Span.Link[] = [];
+  for (const ref of references) {
+    let link: collectorTypes.opentelemetryProto.trace.v1.Span.Link = {
+      traceId: ref.traceID,
+      spanId: ref.spanID,
+      attributes: [],
+      droppedAttributesCount: 0,
+    };
+    if (ref.tags?.length) {
+      for (const tag of ref.tags) {
+        link.attributes?.push({
+          key: tag.key,
+          value: toAttributeValue(tag),
+        });
+      }
+    }
+    links.push(link);
+  }
+  return links;
 }
 
 export function transformTrace(response: DataQueryResponse, nodeGraph = false): DataQueryResponse {

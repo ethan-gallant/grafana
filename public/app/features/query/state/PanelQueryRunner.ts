@@ -183,6 +183,13 @@ export class PanelQueryRunner {
             return of(data);
           }
 
+          const replace = (option: string): string => {
+            return getTemplateSrv().replace(option, data?.request?.scopedVars);
+          };
+          transformations.forEach((transform: any) => {
+            transform.replace = replace;
+          });
+
           return transformDataFrame(transformations, data.series).pipe(map((series) => ({ ...data, series })));
         })
       );
@@ -269,7 +276,7 @@ export class PanelQueryRunner {
     const dataSupport = this.dataConfigSource.getDataSupport();
 
     if (dataSupport.alertStates || dataSupport.annotations) {
-      const panel = this.dataConfigSource as unknown as PanelModel;
+      const panel = (this.dataConfigSource as unknown) as PanelModel;
       panelData = mergePanelAndDashData(observable, getDashboardQueryRunner().getResult(panel.id));
     }
 

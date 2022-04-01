@@ -27,7 +27,9 @@ type SetupOptions = {
   searchParams?: string;
 };
 
-export function setupExplore(options?: SetupOptions): {
+export function setupExplore(
+  options?: SetupOptions
+): {
   datasources: { [name: string]: DataSourceApi };
   store: EnhancedStore;
   unmount: () => void;
@@ -144,7 +146,7 @@ function makeDatasourceSetup({ name = 'loki', id = 1 }: { name?: string; id?: nu
 }
 
 export const waitForExplore = async () => {
-  await screen.findByText(/Editor/i);
+  await screen.findAllByText(/Editor/i);
 };
 
 export const tearDown = () => {
